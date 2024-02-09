@@ -4,9 +4,9 @@ use crate::ray::Ray;
 use super::Object;
 use super::material::Material;
 pub struct Sphere{
-    position: Vec3,
-    radius: f32,
-    material: Material,
+    pub position: Vec3,
+    pub radius: f32,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -24,7 +24,6 @@ impl Default for Sphere{
 impl Object for Sphere{
     // calculate ray sphere intersection using quadratioc formula
     fn intersect(&self, ray: &Ray) -> Option<(f32, f32)>{
-        // let ray_origin = ray.get_origin() - Point3D::new(0.0, 0.0, 0.0); 
         let ray_origin = ray.get_origin() - self.position.clone(); 
         let ray_direction = ray.get_direction().normalize();
         
@@ -47,6 +46,10 @@ impl Object for Sphere{
     fn get_material(&self) -> Material {
         self.material.clone()
     }
+
+    fn get_uv(&self, point: Vec3) -> Vec3 {
+        point.normalize()
+    }
 }
 
 
@@ -56,7 +59,7 @@ mod tests{
     #[test]
     fn ray_2point_sphere_intersection(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
+        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, Some((4.0, 6.0)));
@@ -65,7 +68,7 @@ mod tests{
     #[test]
     fn ray_in_front_of_sphere(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 0.0, 1.0));
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, Some((-6.0, -4.0)));
@@ -74,7 +77,7 @@ mod tests{
     #[test]
     fn ray_miss_sphere(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
+        let ray = Ray::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, None);

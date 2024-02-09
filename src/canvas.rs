@@ -3,7 +3,7 @@ use glam::f32::Vec3;
 pub struct Canvas{
     width: usize,
     height: usize,
-    data: Vec<Vec<Vec3>>
+    pub data: Vec<Vec<Vec3>>
 }
 
 impl Canvas{
