@@ -2,6 +2,7 @@ pub mod canvas;
 pub mod ray;
 pub mod objects;
 pub mod render;
+pub mod scene;
 
 // mod tests{
 //     use glam::Vec3;

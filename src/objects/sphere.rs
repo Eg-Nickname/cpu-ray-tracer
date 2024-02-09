@@ -2,22 +2,21 @@ use glam::f32::Vec3;
 use crate::ray::Ray;
 
 use super::Object;
-use super::material::Material;
 pub struct Sphere{
     pub position: Vec3,
     pub radius: f32,
-    pub material: Material,
+    pub material_id: usize,
 }
 
 impl Sphere {
-    pub fn new(position: Vec3, radius: f32, material: Material) -> Self{
-        Self { position: position, radius: radius, material: material }
+    pub fn new(position: Vec3, radius: f32, material_id: usize) -> Self{
+        Self { position: position, radius: radius, material_id: material_id }
     }
 }
 
 impl Default for Sphere{
     fn default() -> Self {
-        Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material::default())
+        Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, 0)
     }
 }
 
@@ -43,8 +42,8 @@ impl Object for Sphere{
         Some((t1, t2))
     }
 
-    fn get_material(&self) -> Material {
-        self.material.clone()
+    fn get_material_id(&self) -> usize {
+        self.material_id
     }
 
     fn get_uv(&self, point: Vec3) -> Vec3 {
