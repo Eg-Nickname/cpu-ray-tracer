@@ -39,12 +39,11 @@ impl Renderer{
     }
     pub fn render(&self){
         let mut canvas = Canvas::new(self.image_width, self.image_height);
-        let scene = Arc::clone(&self.scene);
         canvas.data.par_iter_mut().enumerate().for_each(|(x, collumn)|{
             collumn.iter_mut().enumerate().for_each(|(y, value)|{
                 let mut  coord = Vec2::new((x as f32)/self.image_width as f32, (y as f32)/self.image_height as f32);
                 coord = (coord * 2.0) - 1.0;
-                let color = Renderer::per_pixel(Arc::clone(&scene), coord);
+                let color = Renderer::per_pixel(Arc::clone(&self.scene), coord);
 
                 *value = color;
             });
@@ -56,17 +55,18 @@ impl Renderer{
         let mut  color = Vec3::default();
         for _ in 0..120{
             let mut ray = Ray::new(Vec3::new(0.0, 0.0, -3.0), Vec3::new(coord.x, coord.y, 1.0), Vec3::new(0.0, 0.0, 0.0));
-            Renderer::trace_ray(Arc::clone(&scene), &mut ray, BOUNCES);
+            let rw_scene: std::sync::RwLockReadGuard<'_, Scene> = (*scene).read().unwrap();
+            Renderer::trace_ray(rw_scene, &mut ray, BOUNCES);
             color += ray.energy;
         }
         color / 120.0
     }
 
     // Mutates ray energy
-    fn trace_ray(scene_ptr: Arc<RwLock<Scene>>, ray: &mut Ray, depth: usize){
+    fn trace_ray(read_scene: std::sync::RwLockReadGuard<'_, Scene>, ray: &mut Ray, depth: usize){
         // Nothing should have lock on scene after render start
-        let temp_scene_ptr = Arc::clone(&scene_ptr);
-        let read_scene = (*temp_scene_ptr).read().unwrap();
+        // let temp_scene_ptr = Arc::clone(&scene_ptr);
+        // let read_scene = (*temp_scene_ptr).read().unwrap();
 
         let mut closest_hit: Option<HitObject> = None;
         // Iter over scene objects
@@ -100,17 +100,22 @@ impl Renderer{
             Some(hit_object) => {
                 // Spawn new ray
                 let hit_point = ray.orgin + ray.direction * hit_object.min_non_negative_hit_poitn;
-                let uv = (*read_scene).objects[hit_object.object_id].get_uv(hit_point);
+                let uv = read_scene.objects[hit_object.object_id].get_uv(hit_point);
+
+                let material_id = read_scene.objects[hit_object.object_id].get_material_id();
+                let object_albedo = read_scene.materials[material_id].albedo;
+                let object_emmision = read_scene.materials[material_id].get_emmision();
+                
                 if depth != 0 {
                     ray.orgin = hit_point;
                     ray.direction = (Ray::random_in_unit_sphere() + uv).normalize();
-                    Renderer::trace_ray(scene_ptr, ray, depth-1);
+                    Renderer::trace_ray(read_scene, ray, depth-1);
                 }
                 
                 // Do things with ray from spawned rays
                 // let hit_object_material_id = scene.objects[hit_object.object_id].get_material_id();
-                ray.energy *= (*read_scene).materials[(*read_scene).objects[hit_object.object_id].get_material_id()].albedo;
-                ray.energy += (*read_scene).materials[(*read_scene).objects[hit_object.object_id].get_material_id()].get_emmision();
+                ray.energy *= object_albedo;
+                ray.energy += object_emmision;
             }
         }
     }
