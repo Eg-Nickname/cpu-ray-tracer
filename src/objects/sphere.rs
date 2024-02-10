@@ -58,7 +58,7 @@ mod tests{
     #[test]
     fn ray_2point_sphere_intersection(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
+        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, Some((4.0, 6.0)));
@@ -67,7 +67,7 @@ mod tests{
     #[test]
     fn ray_in_front_of_sphere(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 0.0, 1.0));
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, Some((-6.0, -4.0)));
@@ -76,7 +76,7 @@ mod tests{
     #[test]
     fn ray_miss_sphere(){
         let sphere = Sphere::default();
-        let ray = Ray::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::default());
+        let ray = Ray::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
         let intersection = sphere.intersect(&ray);
 
         assert_eq!(intersection, None);

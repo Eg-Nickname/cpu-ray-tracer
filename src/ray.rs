@@ -3,16 +3,13 @@ use glam::f32::Vec3;
 pub struct Ray{
     pub orgin: Vec3,
     pub direction: Vec3,
-    // Color of light carried by ray
-    pub energy: Vec3
 }
 
 impl Ray{
-    pub fn new(origin: Vec3, direction: Vec3, energy: Vec3) -> Self{
+    pub fn new(origin: Vec3, direction: Vec3) -> Self{
         Self { 
             orgin: origin,
-            direction: direction,
-            energy: energy
+            direction: direction
         }
     }
 
@@ -39,7 +36,7 @@ mod tests{
 
     #[test]
     fn ray_creation(){
-        let ray = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0), Vec3::default());
+        let ray = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0));
 
         assert_eq!(ray.get_origin(), Vec3::new(1.0, 2.0, 3.0));
         assert_eq!(ray.get_direction(), Vec3::new(4.0, 5.0, 6.0));
@@ -47,7 +44,7 @@ mod tests{
 
     #[test]
     fn point_from_dsitance(){
-        let ray = Ray::new(Vec3::new(2.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0), Vec3::default());
+        let ray = Ray::new(Vec3::new(2.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0));
         assert_eq!(ray.position(1.0), Vec3::new(3.0, 3.0, 4.0));
         assert_eq!(ray.position(-1.0), Vec3::new(1.0, 3.0, 4.0));
         assert_eq!(ray.position(2.5), Vec3::new(4.5, 3.0, 4.0));
