@@ -29,9 +29,7 @@ impl Ray{
     }
 
     pub fn random_in_unit_sphere() -> Vec3{
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-        (Vec3::new(rng.gen::<f32>(), rng.gen::<f32>(),rng.gen::<f32>()) * 2.0 - Vec3::ONE).normalize()
+        (Vec3::new(rand::random::<f32>(), rand::random::<f32>(),rand::random::<f32>()) * 2.0 - Vec3::ONE).normalize()
     }
 }
 

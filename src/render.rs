@@ -3,10 +3,8 @@ use std::sync::RwLock;
 use glam::f32::{Vec2,Vec3};
 use rayon::prelude::*;
 
-use crate::objects;
-use crate::scene;
 use crate::scene::Scene;
-use crate::{objects::Object, ray::Ray};
+use crate::ray::Ray;
 use crate::canvas::Canvas;
 
 const BOUNCES: usize = 5;
