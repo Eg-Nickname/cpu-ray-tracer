@@ -19,26 +19,26 @@ pub struct Renderer{
 
 struct HitObject{
     object_id: usize,
-    t: (f32, f32),
-    min_non_negative_hit_point: f32
+    hit_distance: f32
 }
 
 impl HitObject{
-    pub fn new(object_id: usize, t: (f32, f32), min_non_negative_hit_point: f32) -> Self{
-        HitObject {object_id: object_id, t: t, min_non_negative_hit_point: min_non_negative_hit_point}
+    pub fn new(object_id: usize, hit_distance: f32) -> Self{
+        HitObject {object_id: object_id, hit_distance: hit_distance}
     }
 }
 
-struct EnergyStack{
-    contribiution: f32,
-    color: Vec3,
-    emmision: Vec3,
-}
-struct RayStack{
-    ray: Ray,
-    depth: usize,
-    contribiution: f32
-}
+// struct EnergyStack{
+//     contribiution: f32,
+//     color: Vec3,
+//     emmision: Vec3,
+// }
+
+// struct RayStack{
+//     ray: Ray,
+//     depth: usize,
+//     contribiution: f32
+// }
 
 impl Renderer{
     pub fn new(image_width: usize, image_height: usize, scene: Scene) -> Self{
@@ -76,7 +76,7 @@ impl Renderer{
         color / 120.0
     }
 
-    // Mutates ray energy
+    // Returns energy traced from that ray
     // Recursive version
     fn trace_ray(read_scene: std::sync::RwLockReadGuard<'_, Scene>, mut ray: Ray, depth: usize) -> Vec3{
         let mut ray_energy = Vec3::ZERO;
@@ -84,22 +84,13 @@ impl Renderer{
         
         // Iter over scene objects
         for (object_id, object) in (*read_scene).objects.iter().enumerate(){
-            if let Some(hit) = object.intersect(&ray){
-                if hit.0 > 0.0 || hit.1 > 0.0{
-                    let min_non_negative_hit_point = if hit.0 < 0.0{
-                        hit.1 
-                    }else if hit.1 < 0.0{
-                        hit.0
-                    }else{
-                        hit.0.min(hit.1)
-                    };
-
-                    match &closest_hit{
-                        None => closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point)),
-                        Some(close_hit) => {
-                            if close_hit.t.0 > hit.0 {
-                                closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point));
-                            }
+            let hit = object.intersect(&ray);
+            if hit > 0.0{
+                match &closest_hit{
+                    None => closest_hit = Some(HitObject::new(object_id, hit)),
+                    Some(close_hit) => {
+                        if close_hit.hit_distance > hit {
+                            closest_hit = Some(HitObject::new(object_id, hit));
                         }
                     }
                 }
@@ -113,7 +104,7 @@ impl Renderer{
 
             // Spawn new ray
             if depth != 0 {
-                let hit_point = ray.orgin + ray.direction * hit.min_non_negative_hit_point;
+                let hit_point = ray.orgin + ray.direction * hit.hit_distance;
                 let uv = read_scene.objects[hit.object_id].get_uv(hit_point);
 
                 ray.orgin = hit_point;
@@ -128,76 +119,75 @@ impl Renderer{
         ray_energy
     }
 
-    fn trace_ray_recursive(read_scene: std::sync::RwLockReadGuard<'_, Scene>, start_ray: Ray, max_depth: usize) -> Vec3{
-    
-        let mut ray_stack: Vec<RayStack> = Vec::with_capacity(max_depth*2);
-        let ray_stack_object = RayStack{ray: start_ray, depth: max_depth, contribiution: 1.0};
-        ray_stack.push(ray_stack_object);
-    
-        let mut energy_stack: Vec<EnergyStack> = Vec::with_capacity(max_depth*2);
-    
-        while let Some(ray_object) = ray_stack.pop(){
-            let mut closest_hit: Option<HitObject> = None;
-            // Iter over scene objects
-            for (object_id, object) in (*read_scene).objects.iter().enumerate(){
-                if let Some(hit) = object.intersect(&ray_object.ray){
-                    if hit.0 > 0.0 || hit.1 > 0.0{
-                        let min_non_negative_hit_point = if hit.0 < 0.0{
-                            hit.1 
-                        }else if hit.1 < 0.0{
-                            hit.0
-                        }else{
-                            hit.0.min(hit.1)
-                        };
-    
-                        match &closest_hit{
-                            None => closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point)),
-                            Some(close_hit) => {
-                                if close_hit.t.0 > hit.0 {
-                                    closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-    
-            match closest_hit {
-                None => {},
-                Some(hit_object) => {
-                    // Spawn new ray
-                    if ray_object.depth != 0 {
-                        let hit_point = ray_object.ray.orgin + ray_object.ray.direction * hit_object.min_non_negative_hit_point;
-                        let uv = read_scene.objects[hit_object.object_id].get_uv(hit_point);
-    
-                        ray_stack.push(
-                            RayStack{
-                                ray: Ray::new(hit_point, (Ray::random_in_unit_sphere() + uv).normalize()),
-                                depth: ray_object.depth-1,
-                                contribiution: 1.0,
-                            }
-                        );
-                    }
-    
-                    let material_id = read_scene.objects[hit_object.object_id].get_material_id();
-                    let object_albedo = read_scene.materials[material_id].albedo;
-                    let object_emmision = read_scene.materials[material_id].get_emmision();
-    
-                    energy_stack.push(EnergyStack{
-                        contribiution: ray_object.contribiution,
-                        color: object_albedo,
-                        emmision: object_emmision
-                    });
-                }
-            }
-        }
-    
-        let mut color = Vec3::ZERO;
-        while let Some(energy_object) = energy_stack.pop(){
-            color *= energy_object.color * energy_object.contribiution;
-            color += energy_object.emmision * energy_object.contribiution;
-        }
-    
-        color
-    }
+    // fn trace_ray_recursive(read_scene: std::sync::RwLockReadGuard<'_, Scene>, start_ray: Ray, max_depth: usize) -> Vec3{
+    //     let mut ray_stack: Vec<RayStack> = Vec::with_capacity(max_depth*2);
+    //     let ray_stack_object = RayStack{ray: start_ray, depth: max_depth, contribiution: 1.0};
+    //     ray_stack.push(ray_stack_object);
+    //
+    //     let mut energy_stack: Vec<EnergyStack> = Vec::with_capacity(max_depth*2);
+    //
+    //     while let Some(ray_object) = ray_stack.pop(){
+    //         let mut closest_hit: Option<HitObject> = None;
+    //         // Iter over scene objects
+    //         for (object_id, object) in (*read_scene).objects.iter().enumerate(){
+    //             if let Some(hit) = object.intersect(&ray_object.ray){
+    //                 if hit.0 > 0.0 || hit.1 > 0.0{
+    //                     let min_non_negative_hit_point = if hit.0 < 0.0{
+    //                         hit.1 
+    //                     }else if hit.1 < 0.0{
+    //                         hit.0
+    //                     }else{
+    //                         hit.0.min(hit.1)
+    //                     };
+    //
+    //                     match &closest_hit{
+    //                         None => closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point)),
+    //                         Some(close_hit) => {
+    //                             if close_hit.t.0 > hit.0 {
+    //                                 closest_hit = Some(HitObject::new(object_id, hit, min_non_negative_hit_point));
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         match closest_hit {
+    //             None => {},
+    //             Some(hit_object) => {
+    //                 // Spawn new ray
+    //                 if ray_object.depth != 0 {
+    //                     let hit_point = ray_object.ray.orgin + ray_object.ray.direction * hit_object.min_non_negative_hit_point;
+    //                     let uv = read_scene.objects[hit_object.object_id].get_uv(hit_point);
+    //
+    //                     ray_stack.push(
+    //                         RayStack{
+    //                             ray: Ray::new(hit_point, (Ray::random_in_unit_sphere() + uv).normalize()),
+    //                             depth: ray_object.depth-1,
+    //                             contribiution: 1.0,
+    //                         }
+    //                     );
+    //                 }
+    //
+    //                 let material_id = read_scene.objects[hit_object.object_id].get_material_id();
+    //                 let object_albedo = read_scene.materials[material_id].albedo;
+    //                 let object_emmision = read_scene.materials[material_id].get_emmision();
+    //
+    //                 energy_stack.push(EnergyStack{
+    //                     contribiution: ray_object.contribiution,
+    //                     color: object_albedo,
+    //                     emmision: object_emmision
+    //                 });
+    //             }
+    //         }
+    //     }
+    //
+    //     let mut color = Vec3::ZERO;
+    //     while let Some(energy_object) = energy_stack.pop(){
+    //         color *= energy_object.color * energy_object.contribiution;
+    //         color += energy_object.emmision * energy_object.contribiution;
+    //     }
+    //
+    //     color
+    // }
 }
