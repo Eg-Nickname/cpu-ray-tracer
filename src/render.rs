@@ -66,7 +66,7 @@ impl Renderer{
     fn per_pixel(scene: Arc<RwLock<Scene>>, coord: Vec2) -> Vec3{
         let mut  color = Vec3::default();
         for _ in 0..120{
-            let ray = Ray::new(Vec3::new(0.0, 0.0, -3.0), Vec3::new(coord.x, coord.y, 1.0));
+            let ray = Ray::new(Vec3::new(0.0, 0.0, -3.0), Vec3::new(coord.x, coord.y, 1.0).normalize());
 
             // Nothing should have lock on scene after render start
             let rw_scene: std::sync::RwLockReadGuard<'_, Scene> = (*scene).read().unwrap();
@@ -105,10 +105,16 @@ impl Renderer{
             // Spawn new ray
             if depth != 0 {
                 let hit_point = ray.orgin + ray.direction * hit.hit_distance;
-                let uv = read_scene.objects[hit.object_id].get_uv(hit_point);
+                let mut uv = read_scene.objects[hit.object_id].get_uv(hit_point);
+
+                // Needed for transparent objects becouse ray can be inside and then uv should point opposite way
+                if ray.direction.dot(uv) < 0.0{
+                    uv = -uv;
+                }
 
                 ray.orgin = hit_point;
-                ray.direction = (Ray::random_in_unit_sphere() + uv).normalize();
+                ray.direction = (Ray::random_in_unit_sphere()).normalize();
+
                 ray_energy = Self::trace_ray(read_scene, ray, depth-1);
             }
 

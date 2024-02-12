@@ -26,7 +26,13 @@ impl Ray{
     }
 
     pub fn random_in_unit_sphere() -> Vec3{
-        (Vec3::new(rand::random::<f32>(), rand::random::<f32>(),rand::random::<f32>()) * 2.0 - Vec3::ONE).normalize()
+        loop{
+            let point = Vec3::new(rand::random::<f32>(), rand::random::<f32>(),rand::random::<f32>()) * 2.0 - Vec3::ONE;
+            if point.length_squared() < 1.0{
+                return point.normalize()
+            }
+        }
+        // ().normalize()
     }
 }
 
