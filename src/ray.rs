@@ -25,14 +25,25 @@ impl Ray{
         self.orgin.clone() + self.direction.clone() * t
     }
 
-    pub fn random_in_unit_sphere() -> Vec3{
+    fn random_in_unit_sphere() -> Vec3{
         loop{
             let point = Vec3::new(rand::random::<f32>(), rand::random::<f32>(),rand::random::<f32>()) * 2.0 - Vec3::ONE;
             if point.length_squared() < 1.0{
-                return point.normalize()
+                return point
             }
         }
-        // ().normalize()
+    }
+    fn random_unit_vector() -> Vec3{
+        Self::random_in_unit_sphere().normalize()
+    }
+    
+    pub fn random_on_hemisphere(uv: Vec3) -> Vec3{
+        let on_unit_sphere = Self::random_unit_vector();
+        if on_unit_sphere.dot(uv) > 0.0{
+            on_unit_sphere
+        }else {
+            -on_unit_sphere
+        }
     }
 }
 

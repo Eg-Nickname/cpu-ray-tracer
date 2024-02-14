@@ -45,6 +45,6 @@ impl Object for Sphere{
     }
 
     fn get_uv(&self, point: Vec3) -> Vec3 {
-        point.normalize()
+        (point - self.position).normalize()
     }
 }

@@ -1,4 +1,3 @@
-use std::f32::EPSILON;
 use std::sync::Arc;
 use std::sync::RwLock;
 use glam::f32::{Vec2,Vec3};
@@ -85,7 +84,8 @@ impl Renderer{
         // Iter over scene objects
         for (object_id, object) in (*read_scene).objects.iter().enumerate(){
             let hit = object.intersect(&ray);
-            if hit > 0.0{
+            // Adding epsilon prevents floating point calc error
+            if hit > 0.0+f32::EPSILON{
                 match &closest_hit{
                     None => closest_hit = Some(HitObject::new(object_id, hit)),
                     Some(close_hit) => {
@@ -106,18 +106,20 @@ impl Renderer{
             if depth != 0 {
                 let hit_point = ray.orgin + ray.direction * hit.hit_distance;
                 let mut uv = read_scene.objects[hit.object_id].get_uv(hit_point);
+                let front_face = ray.direction.dot(uv) < 0.0;
 
                 // Needed for transparent objects becouse ray can be inside and then uv should point opposite way
-                if ray.direction.dot(uv) < 0.0{
+                if !front_face{
                     uv = -uv;
+                    println!("inside sphere");
                 }
 
                 ray.orgin = hit_point;
-                ray.direction = (Ray::random_in_unit_sphere()).normalize();
+                ray.direction = Ray::random_on_hemisphere(uv);
 
-                ray_energy = Self::trace_ray(read_scene, ray, depth-1);
+                ray_energy += Self::trace_ray(read_scene, ray, depth-1);
             }
-
+            
             ray_energy *= object_albedo;
             ray_energy += object_emmision;
         }
