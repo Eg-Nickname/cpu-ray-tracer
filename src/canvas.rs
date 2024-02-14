@@ -30,6 +30,10 @@ impl Canvas{
         self.data[x][y] = color;
     }
 
+    fn gamma_correct(linear_color: f32) -> f32{
+        linear_color.sqrt()
+    }
+
     // Creates png file from canvas
     pub fn to_png(self){
         use std::path::Path;
@@ -58,9 +62,9 @@ impl Canvas{
         for y in 0..self.height{
             for x in 0..self.width{
                 let rgba = self.data[x][y];
-                data.push((rgba.x * 255.0) as u8);
-                data.push((rgba.y * 255.0) as u8);
-                data.push((rgba.z * 255.0) as u8);
+                data.push((Self::gamma_correct(rgba.x) * 255.0) as u8);
+                data.push((Self::gamma_correct(rgba.y) * 255.0) as u8);
+                data.push((Self::gamma_correct(rgba.z) * 255.0) as u8);
                 data.push(255);
             }
         }
