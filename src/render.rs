@@ -111,11 +111,11 @@ impl Renderer{
                 // Needed for transparent objects becouse ray can be inside and then uv should point opposite way
                 if !front_face{
                     uv = -uv;
-                    println!("inside sphere");
                 }
 
                 ray.orgin = hit_point;
-                ray.direction = Ray::random_on_hemisphere(uv);
+                // ray.direction = Ray::random_on_hemisphere(uv);
+                ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray.direction, uv);
 
                 ray_energy += Self::trace_ray(read_scene, ray, depth-1);
             }
