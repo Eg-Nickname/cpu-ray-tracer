@@ -5,6 +5,7 @@ use glam::f32::{Vec2,Vec3};
 #[allow(unused_imports)]
 use rayon::prelude::*;
 
+use crate::objects::material::Material;
 use crate::scene::Scene;
 use crate::ray::Ray;
 use crate::canvas::Canvas;
@@ -65,19 +66,19 @@ impl Renderer{
     fn per_pixel(scene: Arc<RwLock<Scene>>, coord: Vec2) -> Vec3{
         let mut  color = Vec3::default();
         for _ in 0..120{
-            let ray = Ray::new(Vec3::new(0.0, 0.0, -3.0), Vec3::new(coord.x, coord.y, 1.0).normalize());
+            let mut ray = Ray::new(Vec3::new(0.0, 0.0, -3.0), Vec3::new(coord.x, coord.y, 1.0).normalize());
 
             // Nothing should have lock on scene after render start
             let rw_scene: std::sync::RwLockReadGuard<'_, Scene> = (*scene).read().unwrap();
 
-            color += Renderer::trace_ray(rw_scene, ray, BOUNCES);
+            color += Renderer::trace_ray(&rw_scene, &mut ray, BOUNCES);
         }
         color / 120.0
     }
 
     // Returns energy traced from that ray
     // Recursive version
-    fn trace_ray(read_scene: std::sync::RwLockReadGuard<'_, Scene>, mut ray: Ray, depth: usize) -> Vec3{
+    fn trace_ray(read_scene: &std::sync::RwLockReadGuard<'_, Scene>, ray: &mut Ray, depth: usize) -> Vec3{
         let mut ray_energy = Vec3::ZERO;
         let mut closest_hit: Option<HitObject> = None;
         
@@ -101,6 +102,7 @@ impl Renderer{
             let material_id = read_scene.objects[hit.object_id].get_material_id();
             let object_albedo = read_scene.materials[material_id].albedo;
             let object_emmision = read_scene.materials[material_id].get_emmision();
+            let object_opacity = read_scene.materials[material_id].opacity;
 
             // Spawn new ray
             if depth != 0 {
@@ -113,11 +115,32 @@ impl Renderer{
                     uv = -uv;
                 }
 
-                ray.orgin = hit_point;
-                // ray.direction = Ray::random_on_hemisphere(uv);
-                ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray.direction, uv);
 
-                ray_energy += Self::trace_ray(read_scene, ray, depth-1);
+                let ray_dir = ray.direction;
+                
+                // Reflected ray
+                ray.orgin = hit_point;
+                ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv);
+
+                ray_energy += Self::trace_ray(read_scene, ray, depth-1) * object_opacity;
+
+                // Refracted ray
+                if object_opacity < 1.0{
+                    let refraction_ratio = if front_face{
+                        1.0 / read_scene.materials[material_id].refractive_index  
+                    }else{
+                        read_scene.materials[material_id].refractive_index  
+                    };
+
+                    // let cos_theta = 1.0f32.min((-ray_dir).dot(uv));
+                    // let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+
+                    // if refraction_ratio * sin_theta < 0.0{
+                        ray.orgin = hit_point;
+                        ray.direction = ray_dir;
+                        ray_energy += Self::trace_ray(read_scene, ray, depth-1) * (1.0 - object_opacity);
+                    // }
+                }
             }
             
             ray_energy *= object_albedo;
