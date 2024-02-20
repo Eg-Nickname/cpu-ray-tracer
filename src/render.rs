@@ -115,32 +115,36 @@ impl Renderer{
                     uv = -uv;
                 }
 
-
                 let ray_dir = ray.direction;
                 
-                // Reflected ray
                 ray.orgin = hit_point;
-                ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv);
-
-                ray_energy += Self::trace_ray(read_scene, ray, depth-1) * object_opacity;
-
-                // Refracted ray
+                
                 if object_opacity < 1.0{
                     let refraction_ratio = if front_face{
                         1.0 / read_scene.materials[material_id].refractive_index  
                     }else{
                         read_scene.materials[material_id].refractive_index  
                     };
-
-                    // let cos_theta = 1.0f32.min((-ray_dir).dot(uv));
-                    // let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
-
-                    // if refraction_ratio * sin_theta < 0.0{
-                        ray.orgin = hit_point;
-                        ray.direction = ray_dir;
-                        ray_energy += Self::trace_ray(read_scene, ray, depth-1) * (1.0 - object_opacity);
-                    // }
+                    
+                    let cos_theta = 1.0f32.min((-ray_dir).dot(uv));
+                    let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+                    
+                    let cannot_refract = refraction_ratio * sin_theta > 1.0;
+                    
+                    ray.direction = if cannot_refract || reflectance(cos_theta, refraction_ratio) > rand::random::<f32>(){
+                        // reflect
+                        // ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv);
+                        read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv)
+                    }else{
+                        // refract
+                        Material::get_refracted_ray(ray_dir, uv, refraction_ratio)
+                    };
+                }else{
+                    ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv);
                 }
+                
+
+                ray_energy += Self::trace_ray(read_scene, ray, depth-1) ;
             }
             
             ray_energy *= object_albedo;
@@ -221,4 +225,12 @@ impl Renderer{
     //
     //     color
     // }
+}
+
+
+fn reflectance(cosine: f32, ref_idx: f32) -> f32{
+    // Use Schlick's approximation for reflectance.
+    let mut r0 = (1.0-ref_idx) / (1.0+ref_idx);
+    r0 = r0*r0;
+    return r0 + (1.0-r0)*(1.0 - cosine).powf(5.0);
 }

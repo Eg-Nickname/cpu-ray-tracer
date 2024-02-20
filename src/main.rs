@@ -9,7 +9,7 @@ use cpu_ray_tracer::render;
 fn main(){
     let timer = Instant::now();
 
-    _metal_sphere();
+    _transparent_spheres();
 
     
     println!("Render time: {}", timer.elapsed().as_secs_f64());
@@ -41,12 +41,12 @@ fn _transparent_spheres(){
     scene.add_material(material::Material::default());
     scene.materials[4].albedo = Vec3::new(0.8, 0.8, 0.0);
 
-    // Purple transparent sphere
+    // Cyan transparent sphere
     scene.add_material(material::Material::default());
     scene.materials[5].albedo = Vec3::new(0.0, 0.8, 0.8);
     scene.materials[5].metalic = 1.0;
     scene.materials[5].opacity = 0.1;
-    scene.materials[5].refractive_index = 1.458;
+    scene.materials[5].refractive_index = 1.0;
 
     // White emissive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, -11.0, -13.5), 10.0, 1)));
@@ -54,8 +54,8 @@ fn _transparent_spheres(){
     // Mate and metalic sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0, 2)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 0.0, 102.5), 100.0, 2)));
-    scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, -1.0), 0.5, 3)));
-    scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, -1.0), 0.5, 5)));
+    scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, -1.0), -0.5, 3)));
+    scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, -1.0), -0.5, 5)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, 4)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, 1)));
     

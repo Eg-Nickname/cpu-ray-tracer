@@ -38,7 +38,7 @@ impl Material{
     }
 
     pub fn get_refracted_ray(ray_dir: Vec3,  uv: Vec3, refraction_ratio: f32) -> Vec3{
-        let cos_theta = 1.0f32.min((-ray_dir).dot(uv));
+        let cos_theta = 1.0f32.min((-uv).dot(ray_dir));
         let out_perpendicular = refraction_ratio * (uv + cos_theta * ray_dir);
         let out_parallel = -(1.0 - out_perpendicular.length_squared()).abs().sqrt() * ray_dir;
 
