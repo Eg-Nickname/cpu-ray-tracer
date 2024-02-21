@@ -10,9 +10,8 @@ use cpu_ray_tracer::render;
 fn main(){
     let timer = Instant::now();
 
-    _metal_sphere();
+    _transparent_spheres();
 
-    
     println!("Render time: {}", timer.elapsed().as_secs_f64());
 }
 
@@ -59,7 +58,12 @@ fn _transparent_spheres(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, -1.0), 0.5, 5)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, 4)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, 1)));
-    let camera = Camera::default();
+    let mut camera = Camera::default();
+    camera.image_width = 1000;
+    camera.image_height = 500;
+    camera.update_look_from(Vec3::new(2.0, -2.0, -3.0));
+    // camera.look_at = Vec3::new(0.0, 2.0, 0.0);
+    camera.recalculate_viewport();
     let render = render::Renderer::new(camera, scene);
     render.render();
 }
@@ -99,7 +103,7 @@ fn _metal_sphere(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(-1.2, 0.0, -1.0), 0.5, 3)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(1.2, 0.0, -1.0), 0.5, 4)));
 
-    let mut camera = Camera::default();
+    let camera = Camera::default();
     let render = render::Renderer::new(camera, scene);
     render.render();
 }

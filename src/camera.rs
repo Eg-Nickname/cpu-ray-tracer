@@ -18,7 +18,6 @@ pub struct Camera{
 
 impl Camera{
     pub fn new(image_width: usize, image_height: usize, look_from: Vec3, look_at: Vec3, vfov: f32) -> Self{
-        let aspect_ratio: f32 = image_width as f32 / image_height as f32;
         // Vector up
         let up_direction = Vec3::new(0.0, -1.0, 0.0);
         let vfov_radians = vfov.to_radians();
@@ -27,7 +26,7 @@ impl Camera{
             look_from: look_from,
             look_at: look_at,
             up_direction: up_direction,
-            aspect_ratio: aspect_ratio,
+            aspect_ratio: 1.0,
             vfov_radians: vfov_radians,
             image_width: image_width,
             image_height: image_height,
@@ -35,11 +34,12 @@ impl Camera{
             pixel_delta_w: Vec3::default(),
             pixel_delta_h: Vec3::default()
         };
-        base_camera.calculate_viewport();
+        base_camera.recalculate_viewport();
         base_camera
     }
 
-    fn calculate_viewport(&mut self){
+    pub fn recalculate_viewport(&mut self){
+        self.aspect_ratio = self.image_width as f32 / self.image_height as f32;
         // Viewport dimensions
         let focal_length = (self.look_from - self.look_at).length();
         let viewport_height = 2.0 * (self.vfov_radians / 2.0).tan() * focal_length;
@@ -64,17 +64,22 @@ impl Camera{
 
     pub fn update_vfov(&mut self, vfov: f32){
         self.vfov_radians = vfov.to_radians();
-        self.calculate_viewport();
     }
 
     pub fn update_look_at(&mut self, look_at: Vec3){
         self.look_at = look_at;
-        self.calculate_viewport();
     }
 
     pub fn update_look_from(&mut self, look_from: Vec3){
         self.look_from = look_from;
-        self.calculate_viewport();
+    }
+
+    pub fn update_width(&mut self, width: usize){
+        self.image_width = width;
+    }
+
+    pub fn update_height(&mut self, height: usize){
+        self.image_height = height;
     }
 }
 
