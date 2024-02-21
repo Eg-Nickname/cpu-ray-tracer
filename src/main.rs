@@ -1,3 +1,4 @@
+use cpu_ray_tracer::camera::Camera;
 use cpu_ray_tracer::scene::Scene;
 use glam::Vec3;
 use std::time::Instant;
@@ -58,8 +59,8 @@ fn _transparent_spheres(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, -1.0), 0.5, 5)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, 4)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, 1)));
-    
-    let render = render::Renderer::new(1000, 1000, scene);
+    let camera = Camera::default();
+    let render = render::Renderer::new(camera, scene);
     render.render();
 }
 
@@ -98,7 +99,8 @@ fn _metal_sphere(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(-1.2, 0.0, -1.0), 0.5, 3)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(1.2, 0.0, -1.0), 0.5, 4)));
 
-    let render = render::Renderer::new(1000, 1000, scene);
+    let mut camera = Camera::default();
+    let render = render::Renderer::new(camera, scene);
     render.render();
 }
 
@@ -124,7 +126,8 @@ fn _mate_sphere(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0, 2)));
 
 
-    let render = render::Renderer::new(1000, 1000, scene);
+    let mut camera = Camera::default();
+    let render = render::Renderer::new(camera, scene);
     render.render();
 }
 
@@ -157,6 +160,7 @@ fn _emmisive_spheres_scene(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 30.0, 4.0), 28.0, 2)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, -4.0, 6.0), 3.0, 3)));
 
-    let render = render::Renderer::new(1000, 1000, scene);
+    let camera = Camera::default();
+    let render = render::Renderer::new(camera, scene);
     render.render();
 }
