@@ -59,9 +59,9 @@ fn _transparent_spheres(){
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, 4)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, 1)));
     let mut camera = Camera::default();
-    camera.image_width = 1000;
-    camera.image_height = 500;
-    camera.update_look_from(Vec3::new(2.0, -2.0, -3.0));
+    camera.image_width = 1800;
+    camera.image_height = 1200;
+    camera.update_look_from(Vec3::new(1.0, -2.0, -3.0));
     // camera.look_at = Vec3::new(0.0, 2.0, 0.0);
     camera.recalculate_viewport();
     let render = render::Renderer::new(camera, scene);

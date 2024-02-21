@@ -1,13 +1,11 @@
 use std::sync::Arc;
 use std::sync::RwLock;
-use glam::f32::{Vec2,Vec3};
+use glam::f32::Vec3;
 
 #[allow(unused_imports)]
 use rayon::prelude::*;
 
-use crate::camera;
 use crate::camera::Camera;
-use crate::objects::material::Material;
 use crate::scene::Scene;
 use crate::ray::Ray;
 use crate::canvas::Canvas;
@@ -57,8 +55,6 @@ impl Renderer{
         let mut canvas = Canvas::new(self.image_width, self.image_height);
         canvas.data.par_iter_mut().enumerate().for_each(|(x, collumn)|{
             collumn.iter_mut().enumerate().for_each(|(y, value)|{
-                // let mut  coord = Vec2::new((x as f32)/self.image_width as f32, (y as f32)/self.image_height as f32);
-                // coord = (coord * 2.0) - 1.0;
                 let ray_dir = (self.camera.top_left + (self.camera.pixel_delta_w * x as f32) + (self.camera.pixel_delta_h * y as f32)) - self.camera.look_from;
                 let color = Renderer::per_pixel(Arc::clone(&self.scene), self.camera.look_from, ray_dir.normalize());
 
@@ -131,20 +127,9 @@ impl Renderer{
 
                 // Refracted ray
                 if object_opacity < 1.0{
-                    let refraction_ratio = if front_face{
-                        1.0 / read_scene.materials[material_id].refractive_index  
-                    }else{
-                        read_scene.materials[material_id].refractive_index  
-                    };
-
-                    // let cos_theta = 1.0f32.min((-ray_dir).dot(uv));
-                    // let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
-
-                    // if refraction_ratio * sin_theta < 0.0{
-                        ray.orgin = hit_point;
-                        ray.direction = ray_dir;
-                        ray_energy += Self::trace_ray(read_scene, ray, depth-1) * (1.0 - object_opacity);
-                    // }
+                    ray.orgin = hit_point;
+                    ray.direction = ray_dir;
+                    ray_energy += Self::trace_ray(read_scene, ray, depth-1) * (1.0 - object_opacity);
                 }
             }
             
