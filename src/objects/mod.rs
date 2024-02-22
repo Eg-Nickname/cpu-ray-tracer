@@ -3,6 +3,7 @@ use glam::f32::Vec3;
 
 pub mod material;
 pub mod sphere;
+pub mod aabb;
 
 pub trait Object {
     fn intersect(&self, ray: &Ray) -> f32;
