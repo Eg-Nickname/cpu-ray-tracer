@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::sync::RwLock;
 use glam::f32::Vec3;
-
+use glam::f64::DVec3;
 #[allow(unused_imports)]
 use rayon::prelude::*;
 
@@ -10,10 +10,11 @@ use crate::scene::Scene;
 use crate::ray::Ray;
 use crate::canvas::Canvas;
 
-const BOUNCES: usize = 5;
 pub struct Renderer{
     image_width: usize,
     image_height: usize,
+    max_ray_bounces: usize,
+    samples_per_pixel: usize,
     camera: Camera,
     scene: Arc<RwLock<Scene>>,
 }
@@ -42,10 +43,12 @@ impl HitObject{
 // }
 
 impl Renderer{
-    pub fn new(camera: Camera, scene: Scene) -> Self{
+    pub fn new(camera: Camera, scene: Scene, max_ray_bounces: usize, samples_per_pixel: usize) -> Self{
         Renderer{
             image_width: camera.image_width,
             image_height: camera.image_height,
+            max_ray_bounces: max_ray_bounces,
+            samples_per_pixel: samples_per_pixel,
             camera: camera,
             scene: Arc::new(RwLock::new(scene)),
         }
@@ -56,7 +59,14 @@ impl Renderer{
         canvas.data.par_iter_mut().enumerate().for_each(|(x, collumn)|{
             collumn.iter_mut().enumerate().for_each(|(y, value)|{
                 let ray_dir = (self.camera.top_left + (self.camera.pixel_delta_w * x as f32) + (self.camera.pixel_delta_h * y as f32)) - self.camera.look_from;
-                let color = Renderer::per_pixel(Arc::clone(&self.scene), self.camera.look_from, ray_dir.normalize());
+                let color = Renderer::per_pixel(
+                    Arc::clone(&self.scene),
+                    self.camera.look_from,
+                    ray_dir, self.camera.pixel_delta_w,
+                    self.camera.pixel_delta_h,
+                    self.samples_per_pixel,
+                    self.max_ray_bounces
+                );
 
                 *value = color;
             });
@@ -64,17 +74,19 @@ impl Renderer{
         canvas.to_png()
     }
 
-    fn per_pixel(scene: Arc<RwLock<Scene>>, ray_origin: Vec3, ray_dir: Vec3) -> Vec3{
-        let mut  color = Vec3::default();
-        for _ in 0..120{
-            let mut ray = Ray::new(ray_origin, ray_dir);
+    fn per_pixel(scene: Arc<RwLock<Scene>>, ray_origin: Vec3, ray_dir: Vec3, delta_w: Vec3, delta_h: Vec3, spp: usize, max_ray_bounces: usize) -> Vec3{
+        let mut  color = DVec3::default();
+        for _ in 0..spp{
+            let ray_dir_jitter = delta_w * (rand::random::<f32>() - 0.5) + delta_h * (rand::random::<f32>() - 0.5);
+
+            let mut ray = Ray::new(ray_origin, (ray_dir + ray_dir_jitter).normalize());
 
             // Nothing should have lock on scene after render start
             let rw_scene: std::sync::RwLockReadGuard<'_, Scene> = (*scene).read().unwrap();
 
-            color += Renderer::trace_ray(&rw_scene, &mut ray, BOUNCES);
+            color += Renderer::trace_ray(&rw_scene, &mut ray, max_ray_bounces).as_dvec3();
         }
-        color / 120.0
+        (color / spp as f64).as_vec3()
     }
 
     // Returns energy traced from that ray
