@@ -9,14 +9,24 @@ use cpu_ray_tracer::objects::sphere::Sphere;
 use cpu_ray_tracer::render;
 
 fn main(){
-    let timer = Instant::now();
+    let setup_timer = Instant::now();
+    let scene = _rgb_cubes();
+    
+    let mut camera = Camera::default();
+    camera.image_width = 900;
+    camera.image_height = 600;
+    camera.update_look_from(Vec3::new(-6.0, -4.0, 6.1));
+    camera.update_look_at(Vec3::new(-8.0, -2.0, 8.1));
+    camera.recalculate_viewport();
+    println!("Setup time: {}", setup_timer.elapsed().as_millis());
 
-    _cube_different_materials();
-
-    println!("Render time: {}", timer.elapsed().as_secs_f64());
+    let render_timer = Instant::now();
+    let render = render::Renderer::new(camera, scene, 10, 120);
+    render.render();
+    println!("Render time: {}", render_timer.elapsed().as_secs_f64());
 }
 
-fn _cube_different_materials(){
+fn _rgb_cubes() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
@@ -27,63 +37,54 @@ fn _cube_different_materials(){
     scene.materials[1].emmision_color = Vec3::ONE;
     scene.materials[1].emmision_power = 1.0;
 
-    // White metalic material
+    // Red emmisive material
     scene.add_material(material::Material::default());
-    scene.materials[2].albedo = Vec3::new(1.0, 1.0, 0.5);
-    scene.materials[2].metalic = 1.0;
+    scene.materials[2].albedo = Vec3::new(0.5, 0.5, 0.5);
+    scene.materials[2].emmision_color = Vec3::new(1.0, 0.0, 0.0);
+    scene.materials[2].emmision_power = 1.5;
 
-    // Pink metalic material
+    // Green emmisive material
     scene.add_material(material::Material::default());
-    scene.materials[3].albedo = Vec3::new(0.8, 0.2, 0.9);
-    scene.materials[3].metalic = 1.0;
-    scene.materials[3].roughness = 0.0;
+    scene.materials[3].albedo = Vec3::new(0.5, 0.5, 0.5);
+    scene.materials[3].emmision_color = Vec3::new(0.0, 1.0, 0.0);
+    scene.materials[3].emmision_power = 1.5;
 
-    // Cyan transparent material
+    // Blue emmisive material
     scene.add_material(material::Material::default());
-    scene.materials[4].albedo = Vec3::new(0.0, 0.8, 0.8);
-    scene.materials[4].metalic = 1.0;
-    scene.materials[4].opacity = 0.1;
-
-    // Green wall material
-    scene.add_material(material::Material::default());
-    scene.materials[5].albedo = Vec3::new(0.0, 0.8, 0.0);
+    scene.materials[4].albedo = Vec3::new(0.5, 0.5, 0.5);
+    scene.materials[4].emmision_color = Vec3::new(0.0, 0.0, 1.0);
+    scene.materials[4].emmision_power = 1.5;
 
     
     // Floor
     scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, 1.0, -10.0), Vec3::new(10.0, 0.0, 10.0), 0)));
 
+    // Celling
+    scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, -10.0, -10.0), Vec3::new(10.0, -11.0, 10.0), 0)));
+
     // Walls
     scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, 10.0, -10.0), Vec3::new(-10.0, -11.0, 10.0), 0)));
-    scene.add_object(Box::new(AABB::new(Vec3::new(10.0, 10.0, -10.0), Vec3::new(11.0, -10.0, 10.0), 0)));
-
     scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, 10.0, 10.0), Vec3::new(10.0, -10.0, 11.0), 0)));
+
+    scene.add_object(Box::new(AABB::new(Vec3::new(10.0, 10.0, -10.0), Vec3::new(11.0, -10.0, 10.0), 0)));
     scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, 10.0, -10.0), Vec3::new(10.0, -10.0, -11.0), 0)));
 
-    // Celling
-    scene.add_object(Box::new(AABB::new(Vec3::new(-10.0, -10.0, -10.0), Vec3::new(10.0, -11.0, 10.0), 1)));
+    // Red emmisive cube
+    scene.add_object(Box::new(AABB::cube(Vec3::new(-7.9, -1.0, 8.1), 1.0,2)));
+    // Green emmisive cube
+    scene.add_object(Box::new(AABB::cube(Vec3::new(-9.0, -1.0, 7.0), 1.0,3)));
+    // Blue emmisive cube
+    scene.add_object(Box::new(AABB::cube(Vec3::new(-9.0, -2.1, 8.1), 1.0,4)));
 
-    // Emmisive box
-    scene.add_object(Box::new(AABB::new(Vec3::new(-3.0, -0.5, 0.0), Vec3::new(-1.0, -1.5, 1.0), 1)));
-
-    scene.add_object(Box::new(AABB::cube(Vec3::new(-3.0, -1.6, 0.0), 1.0, 4)));
-    scene.add_object(Box::new(AABB::cube(Vec3::new(-0.6, 0.0, -1.0), 1.0, 3)));
-
-    let mut camera = Camera::default();
-    camera.image_width = 800;
-    camera.image_height = 800;
-    camera.update_look_from(Vec3::new(4.0, -4.0, -3.0));
-    // camera.look_at = Vec3::new(0.0, 2.0, 0.0);
-    camera.recalculate_viewport();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+    scene
 }
 
-fn _cube_test(){
+fn _test_cubes() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
 
-    // White emmisive sphere material
+    // White emmisive material
     scene.add_material(material::Material::default());
     scene.materials[1].albedo = Vec3::ONE;
     scene.materials[1].emmision_color = Vec3::ONE;
@@ -123,18 +124,10 @@ fn _cube_test(){
     scene.add_object(Box::new(AABB::cube(Vec3::new(-3.0, -1.6, 0.0), 1.0, 5)));
     scene.add_object(Box::new(AABB::new(Vec3::new(-3.0, -0.5, 0.0), Vec3::new(-1.0, -1.5, 1.0), 1)));
 
-
-    let mut camera = Camera::default();
-    camera.image_width = 800;
-    camera.image_height = 800;
-    camera.update_look_from(Vec3::new(1.0, -2.0, -3.0));
-    // camera.look_at = Vec3::new(0.0, 2.0, 0.0);
-    camera.recalculate_viewport();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+    scene
 }
 
-fn _transparent_spheres(){
+fn _transparent_spheres() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
@@ -145,69 +138,68 @@ fn _transparent_spheres(){
     scene.materials[1].emmision_color = Vec3::ONE;
     scene.materials[1].emmision_power = 1.0;
 
-    // White mate sphere
+    // White mate material
     scene.add_material(material::Material::default());
     scene.materials[2].albedo = Vec3::new(0.8, 0.8, 0.8);
 
-    // Yellow transparent sphere
+    // Yellow transparent material
     scene.add_material(material::Material::default());
     scene.materials[3].albedo = Vec3::new(0.8, 0.8, 0.0);
     scene.materials[3].metalic = 1.0;
     scene.materials[3].opacity = 0.1;
     scene.materials[3].refractive_index = 1.458;
 
-    // Yellow mate sphere
+    // Yellow mate material
     scene.add_material(material::Material::default());
     scene.materials[4].albedo = Vec3::new(0.8, 0.8, 0.0);
 
-    // Purple transparent sphere
+    // Cyan transparent material
     scene.add_material(material::Material::default());
     scene.materials[5].albedo = Vec3::new(0.0, 0.8, 0.8);
     scene.materials[5].metalic = 1.0;
     scene.materials[5].opacity = 0.1;
     scene.materials[5].refractive_index = 1.458;
 
-    // White emissive sphere
+    // White emissive sphere (scene light source)
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, -11.0, -13.5), 10.0, 1)));
 
-    // Mate and metalic sphere
+    // White mate spheres
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0, 2)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 0.0, 102.5), 100.0, 2)));
+
+    // Yellow transparent sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, -1.0), 0.5, 3)));
+    // Cyan transparent sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, -1.0), 0.5, 5)));
+    // Yellow mate sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, 4)));
+    // White emmisive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, 1)));
-    let mut camera = Camera::default();
-    camera.image_width = 1800;
-    camera.image_height = 1200;
-    camera.update_look_from(Vec3::new(1.0, -2.0, -3.0));
-    // camera.look_at = Vec3::new(0.0, 2.0, 0.0);
-    camera.recalculate_viewport();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+
+    scene
 }
 
-fn _metal_sphere(){
+fn _metal_sphere() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
 
-    // White emmisive sphere material
+    // White emmisive material
     scene.add_material(material::Material::default());
     scene.materials[1].albedo = Vec3::ONE;
     scene.materials[1].emmision_color = Vec3::ONE;
     scene.materials[1].emmision_power = 1.0;
 
-    // White mate sphere
+    // White mate material
     scene.add_material(material::Material::default());
     scene.materials[2].albedo = Vec3::new(0.8, 0.8, 0.8);
 
-    // Yellow metalic soheere
+    // Yellow metalic material
     scene.add_material(material::Material::default());
     scene.materials[3].albedo = Vec3::new(0.8, 0.8, 0.0);
     scene.materials[3].metalic = 1.0;
 
-    // Pink metalic fuzzy soheere
+    // Pink metalic fuzzy material
     scene.add_material(material::Material::default());
     scene.materials[4].albedo = Vec3::new(0.8, 0.2, 0.9);
     scene.materials[4].metalic = 1.0;
@@ -216,74 +208,70 @@ fn _metal_sphere(){
     // White emissive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, -11.0, -13.5), 10.0, 1)));
 
-    // Mate and metalic sphere
+    // White mate sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0, 2)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, 2)));
+    // Yellow metalic sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(-1.2, 0.0, -1.0), 0.5, 3)));
+    // Purple metalic fuzzy sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(1.2, 0.0, -1.0), 0.5, 4)));
 
-    let camera = Camera::default();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+    scene
 }
 
-fn _mate_sphere(){
+fn _mate_sphere() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
 
-    // White emmisive sphere material
+    // White emmisive material
     scene.add_material(material::Material::default());
     scene.materials[1].albedo = Vec3::ONE;
     scene.materials[1].emmision_color = Vec3::ONE;
     scene.materials[1].emmision_power = 1.0;
 
-    // Purple mate sphere
+    // Purple mate material
     scene.add_material(material::Material::default());
     scene.materials[2].albedo = Vec3::new(0.8, 0.0, 1.0);
 
     // White emissive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -13.5), 10.0, 1)));
-    // Purple spheres
+    // Purple mate spheres
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, 2)));
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0, 2)));
 
-
-    let mut camera = Camera::default();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+    scene
 }
 
-fn _emmisive_spheres_scene(){
+fn _emmisive_spheres_scene() -> Scene{
     let mut scene = Scene::new();
     // Default 0 material
     scene.add_material(material::Material::default());
 
-    // Red sphere material
+    // Red emmisive material
     scene.add_material(material::Material::default());
     scene.materials[1].emmision_color = Vec3::new(1.0, 0.0, 0.0);
     scene.materials[1].emmision_power = 20.0;
 
-    // Green sphere material
+    // Green emmisive material
     scene.add_material(material::Material::default());
     scene.materials[2].emmision_color = Vec3::new(0.1, 0.8, 0.0);
     scene.materials[2].emmision_power = 1.0;
 
-    // White sphere material
+    // White emmisive material
     scene.add_material(material::Material::default());
     scene.materials[3].albedo = Vec3::new(0.8, 0.8, 0.8);
     scene.materials[3].emmision_color = Vec3::new(0.8, 0.8, 0.8);
     scene.materials[3].emmision_power = 0.4;
 
-    // White non emissive sphere
+    // White mate sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(1.1, 0.0, 1.0), 1.0, 0)));
-    // Red sphere
+    // Red emmisive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(-1.1, 0.0, -0.2), 1.0, 1)));
-    // Green sphere
+    // Green emmisive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, 30.0, 4.0), 28.0, 2)));
+    // White emmisive sphere
     scene.add_object(Box::new(Sphere::new(Vec3::new(0.0, -4.0, 6.0), 3.0, 3)));
 
-    let camera = Camera::default();
-    let render = render::Renderer::new(camera, scene);
-    render.render();
+    scene
 }
