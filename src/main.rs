@@ -18,7 +18,7 @@ fn main(){
     camera.update_look_from(Vec3::new(-6.0, -4.0, 6.1));
     camera.update_look_at(Vec3::new(-8.0, -2.0, 8.1));
     camera.recalculate_viewport();
-    println!("Setup time: {}", setup_timer.elapsed().as_millis());
+    println!("Setup time: {}", setup_timer.elapsed().as_micros());
 
     let render_timer = Instant::now();
     let render = render::Renderer::new(camera, scene, 10, 120);

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::RwLock;
 use glam::f32::Vec3;
 use glam::f64::DVec3;
@@ -44,9 +45,14 @@ impl Renderer{
 
     pub fn render(&self){
         let mut canvas = Canvas::new(self.image_width, self.image_height);
+        let progress = Mutex::new(0usize);
+
         canvas.data.par_iter_mut().enumerate().for_each(|(x, collumn)|{
-            collumn.iter_mut().enumerate().for_each(|(y, value)|{
+            collumn.iter_mut().enumerate().for_each(|(y, value,)|{
+                // Calculating ray direction based on pixel coordinates
                 let ray_dir = (self.camera.top_left + (self.camera.pixel_delta_w * x as f32) + (self.camera.pixel_delta_h * y as f32)) - self.camera.look_from;
+                
+                // Avrage light color for this pioxel
                 let color = Renderer::per_pixel(
                     Arc::clone(&self.scene),
                     self.camera.look_from,
@@ -56,6 +62,15 @@ impl Renderer{
                     self.max_ray_bounces
                 );
 
+                // Progress counter
+                if y==0 && x%4==0{
+                    let mut lock = progress.lock().unwrap();
+                    *lock += 1;
+
+                    println!("Progress: {}%", *lock * 400 / self.image_width)
+                }
+
+                // Set color to canvas
                 *value = color;
             });
         });
@@ -63,8 +78,12 @@ impl Renderer{
     }
 
     fn per_pixel(scene: Arc<RwLock<Scene>>, ray_origin: Vec3, ray_dir: Vec3, delta_w: Vec3, delta_h: Vec3, spp: usize, max_ray_bounces: usize) -> Vec3{
+        // Vec3 with f64 for better collor avrage on high samples per pixel runs with high emissive values materials
         let mut  color = DVec3::default();
+
+        // Getting multiple samples per pixel
         for _ in 0..spp{
+            // Current sample ray random offset
             let ray_dir_jitter = delta_w * (rand::random::<f32>() - 0.5) + delta_h * (rand::random::<f32>() - 0.5);
 
             let mut ray = Ray::new(ray_origin, (ray_dir + ray_dir_jitter).normalize());
@@ -72,8 +91,10 @@ impl Renderer{
             // Nothing should have lock on scene after render start
             let rw_scene: std::sync::RwLockReadGuard<'_, Scene> = (*scene).read().unwrap();
 
+            // Accumulate traced rays energy
             color += Renderer::trace_ray(&rw_scene, &mut ray, max_ray_bounces).as_dvec3();
         }
+        // Return avrage of acummulated colors
         (color / spp as f64).as_vec3()
     }
 
@@ -116,19 +137,20 @@ impl Renderer{
                     uv = -uv;
                 }
 
-
                 let ray_dir = ray.direction;
                 
                 // Reflected ray
                 ray.orgin = hit_point;
                 ray.direction = read_scene.materials[material_id].get_scattered_ray_dir(ray_dir, uv);
 
+                // Contribiution of refracted ray color based on object opacity
                 ray_energy += Self::trace_ray(read_scene, ray, depth-1) * object_opacity;
 
                 // Refracted ray
                 if object_opacity < 1.0{
                     ray.orgin = hit_point;
                     ray.direction = ray_dir;
+                    // Contribiution of refracted ray color based on 1 - (object opacity)
                     ray_energy += Self::trace_ray(read_scene, ray, depth-1) * (1.0 - object_opacity);
                 }
             }
